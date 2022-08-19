@@ -4,6 +4,6 @@ In this repository we share a set of scripts that were used for the construction
 
 
 <p align="center">
-    <img  src="images/animatedGIF_mapbiomas.gif", width="550", alt="accessibility text">
+    <img  src="imgs/map_bacias4.npg", width="550", alt="accessibility text">
 </p>
 Figure 1: Limits of hydrographic basins, mosaics, and one of the maps in collection 7.0
