@@ -16,7 +16,7 @@ The classes produced in this work correspond to level 3, available in:
 The category of class of land cover are listed below with the nomenclature, the class number  and the color corresponding in the serie maps .
 
 <p align="center">
-    <img  src="images/legendaCaatinga.png", width="350", heigth="200", alt="accessibility text">
+    <img  src="imgs/legendaCaatinga.png", width="350", heigth="200", alt="accessibility text">
 </p>
 
 Table 1: Legend of the classified classes.
@@ -24,7 +24,7 @@ Table 1: Legend of the classified classes.
 The flow of the mapping process is explained in figure 2 below:
 
 <p align="center">
-    <img  src="images/fluxograma_Col_7.0.png", width="550", alt="accessibility text">
+    <img  src="imgs/fluxograma_Col_7.0.png", width="550", alt="accessibility text">
 </p>
 Figure 2: Classification process of Mapbiomas current collection (1985-2021) in the Caatinga Biome.
 
@@ -75,25 +75,58 @@ class ClassMosaic_indexs_Spectral(object):
 * - sampling methods 
 * - removal of points outliers
 
-*Reference samples* for classification are collected from the map series in the most recent collection of Mapbiomas, in this case colection 5.0. To collect points with a certain level of veracity confidence per map year, a layer of stable pixels with 5 years of maps is created. Two years before the year under study and two years later. The window in time can be enlarged or reduced to 3, but it always matters. For this, modify the input parameters in the dictionary stop in the script pontos_SemBalanceamento.py.
+*Reference samples* for classification are collected from the map series in the most recent collection of Mapbiomas, in this case colection 6.0. To collect points with a certain level of veracity confidence per map year, a layer of stable pixels with 5 years of maps is created. Two years before the year under study and two years later. The sampling process for areas large in google earth engine (GEE) is a computationally expensive task, that is why in this work small areas were selected at level 4 watershed. The level 4 watershed has 320 regions, then this sampling process was automated using the api python of GEE. For this, modify the input parameters in the dictionary in the script pontos_balanceadosv2.py.
+
 ```python
-param = {
-    'bioma': "CAATINGA", #nome do bioma setado nos metadados
-    'asset_bacias': "projects/mapbiomas-arida/ALERTAS/auxiliar/bacias_hidrografica_caatinga",
-    'asset_IBGE': 'users/SEEGMapBiomas/bioma_1milhao_uf2015_250mil_IBGE_geo_v4_revisao_pampa_lagoas',    
-    'outAsset': 'projects/mapbiomas-workspace/AMOSTRAS/col6/CAATINGA/ROIsXBaciasBal2/',
-    'assetMapbiomasP': 'projects/mapbiomas-workspace/AMOSTRAS/col5/CAATINGA/classificacoes/classesV11',
-    'asset_Mosaic': 'projects/mapbiomas-workspace/MOSAICOS/workspace-c3',
-    'asset_mosaic_norm': 'projects/nexgenmap/MapBiomas2/LANDSAT/mosaics-normalized',
-    'classMapB': [3, 4, 5, 9,12,13,15,18,19,20,21,22,23,24,25,26,29,30,31,32,33,36,37,38,39,40,41,42,43,44,45],
-    'classNew': [3, 4, 3, 3,12,12,21,21,21,21,21,22,22,22,22,33,29,22,33,12,33, 21,33,33,21,21,21,21,21,21,21],
-    'janela': 5,
-    'lsClasse': [3,4,12,21,22,33,29],
-    'lsPtos': [1500,1500,1500,1500,1500,1500,1500] 
-    'anoInicial': 1985,
-    'anoFinal': 2020
-}
+for item in lsBacias[:]:
+
+    if item not in baciasFeitas:
+
+        print("fazendo bacia " + item)
+
+        baciaTemp = ftcol_bacias.filter(
+            ee.Filter.eq('nunivotto3', item)).first()
+        # geobacia, colAnos, nomeBacia, dict_nameBN4
+        objetoMosaic_exportROI.iterate_bacias(baciaTemp.geometry(
+        ),  newColectAnos[indexIni: indexFin + 2], item,  dict_lstBacias)
+
+        print("salvando ROIs bacia: << {} >>".format(item))
 ```
 
-Modify the file that records the collected basins:
-arqFeitos = open("registros/lsBaciasROIsfeitasBalanceadas.txt", 'r')
+for each watershed level N2 is called the object *ClassMosaic_indexs_Spectral*  in this class each points sample for year mosaic is collected and exported by watershed level N2.
+
+Remove Outliers is a good technique for cleaning data in the preprocessing step. The outliers pixels of each coverage class are removed using a clustering algorithm “ee.Clusterer.wekaLVQ" implemented in the Google Earth Engine of the article PELLEG and MOORE, 1998. 
+
+> ==> run: python filtroOutlierAmostras.py
+
+The parameters of cluster was:
+```python
+    'pmtClustLVQ' : { 
+        'numClusters': 8, 'learningRate': 0.000005, 'epochs': 800
+        }
+```
+
+
+<p align="center">
+    <img  src="imgs/remocaoOutliers.png",  alt="accessibility text">
+</p>
+Figure 3: Visualization of the result of removing outliers before and after.
+
+
+## Feature selection
+
+For the construction of the use and coverage maps of the Mapbiomas project, annual analytical mosaics are used. These mosaics have a Feature Space of 102 bands. The selection of the bands to be used in a classification by Machine Learning is fundamental for a good performance of the classification algorithm as well as decreasing the processing time. For this analysis, all points previously collected are downloaded from asset GEE, in CSV format. These have information from each of the bands in the mosaic. The method to know which bands of the mosaic are most important is used the function [feature_importances_] of the model implemented in the python sklearn library, for more information [visit scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html?highlight=sklearn%20ensemble#sklearn.ensemble.RandomForestClassifier):
+
+A first feature space selection strategy was to filter out all the features that were highly correlated with each other. With this step all highly correlated spectral bands would be considered redundant. See figure 4. 
+
+<p align="center">
+    <img  src="imgs/matrix_correlation.png",  width="750", heigth="500", alt="accessibility text">
+</p>
+Figure 4: Visualization of correlation matrix of feature space.
+
+In feature analysis it is important to understand how variables are distributed in space. Visual exploration is an essential component of data analysis, it allows you to visually arrive at intuitions and hypotheses about the structure and distribution in space. Visual analysis allows you to develop some approaches to obtain or quantify such an understanding of the data, KEIM <i> et al. <\i> 2010. Pair combinations help a bit to visually understand the complexity of separating classes within the space used. See figure 5. 
+
+<p align="center">
+    <img  src="imgs/visualization_feature_space.png", width="550", heigth="550", alt="accessibility text">
+</p>
+Figure 5: Visualization scatter plot of samples by feature pairs .
