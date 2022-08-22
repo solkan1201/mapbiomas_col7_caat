@@ -120,7 +120,7 @@ For the construction of the use and coverage maps of the Mapbiomas project, annu
 A first feature space selection strategy was to filter out all the features that were highly correlated with each other. With this step all highly correlated spectral bands would be considered redundant. See figure 4. 
 
 <p align="center">
-    <img  src="imgs/matrix_correlation.png",  width="750", heigth="500", alt="accessibility text">
+    <img  src="imgs/matrix_correlationV2.png",  width="750", heigth="500", alt="accessibility text">
 </p>
 Figure 4: Visualization of correlation matrix of feature space.
 
